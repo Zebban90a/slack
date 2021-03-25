@@ -7,11 +7,30 @@
     <title>Document</title>
 </head>
 <body>
+
+    
     
     <div class="chat-messages">
+        <% for (chat of chats) { %>
+        <div>
+        <p class="font-weight-bold"> <span><%= chat.created_date %> </span></p>
+        <p class="text">
+            <%= chat.nickname %>:
+            <%= chat.message %>
+        </p>
+        
+        </div>
+        <% } %>
     </div>
     <div class="chat-form-container">
     <form id="chat-form">
+    <input
+    id="nameInput"
+    autocomplete="off"
+    type="text"
+    value="<%= username %>" 
+    hidden
+    />
     <input
     id="msg"
     type="text"
@@ -25,7 +44,7 @@
 
     
     <script src= "/socket.io/socket.io.js"></script>
-    <script src = "../js/main.js"></script>
+    <script src = "../public/js/main.js"></script>
 
 </body>
 </html>

@@ -15,7 +15,7 @@
 </head>
 <body>
 
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+    <nav class="navbar navbar-expand-lg navbar-light bg-light d-flex justify-content-center">
         <a class="navbar-brand" href="#">Navbar</a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
           <span class="navbar-toggler-icon"></span>
@@ -32,10 +32,9 @@
         </div>
       </nav>
       <%- include ('sidenav') %>
-      
       <div class="main">
-        
-        <h1>Welcome to Slackchat!</h1>
+        <h1>Channel: <%= room.room_name %></h1>
+        <%- include ('chat') %>
         
       </div>
 

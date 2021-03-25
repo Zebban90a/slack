@@ -1,0 +1,16 @@
+<div class="sidenav">
+
+  <img src="<%=profilepicture %>" class="img-thumbnail" alt="...">
+    <a href="/change">userprofile</a>
+
+    <button id="myBtn">Create Channel</button>
+    <% for (room of rooms) { %>
+    
+      
+    <a href="/channel/<%= room._id %>"> <%= room.room_name %> </a>
+    <a href="/channel/delete/<%= room._id %>">&#10060</a>
+    <% } %>
+  </div>
+  </div>
+
+  
