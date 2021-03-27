@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const passport = require("passport")
 const LocalStrategy = require('passport-local')
 const bodyParser = require('body-parser')
-const passportLocalMongoose = require("passport-local-mongoose")
 const User = require("./models/user");
 const Chat = require('./models/chat')
 const Room = require('./models/room')
@@ -13,18 +12,9 @@ const fileUpload = require("express-fileupload")
 const {
     userJoin,
     getCurrentUser,
-    userLeave,
-    getRoomUsers,
-    date_string
   } = require('./utils/users');
 
 const http = require('http');
-
-
-let rooms = []
-let room = {}
-
-
 const app = express()
 const server = http.createServer(app)
 const io = socketio(server)
@@ -32,11 +22,13 @@ const io = socketio(server)
 app.set('view engine', 'ejs');
 app.use(bodyParser.urlencoded({ extended:true }))
 
+// Connect till databas
 mongoose.connect("mongodb://localhost:27017/slack" , {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   });
 
+  //statiska
 app.use('/public', express.static(path.join(__dirname, 'public')));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')))
 
@@ -54,12 +46,16 @@ secret:"secret",
     saveUninitialized:true    
 }));
 
+//inloggningshantering
 passport.serializeUser(User.serializeUser());   //encoding    
 passport.deserializeUser(User.deserializeUser());  //decoding
 passport.use(new LocalStrategy(User.authenticate()));
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+let rooms = []
+let room = {}
 
 app.get('/', (req,res) => {
     res.redirect('/login')
@@ -74,6 +70,15 @@ app.post("/login",passport.authenticate("local",{
     failureRedirect:"/login"
 }))
 
+//om man är inloggad , annars redirecta till /login
+function isLoggedIn(req,res,next) {
+    if(req.isAuthenticated()){
+        return next();
+    }
+    res.redirect("/login");
+}
+
+// vad som renderas på dashboard
 app.get("/dashboard",isLoggedIn , async(req,res) =>{
     let username = req.user.username
     let profilepicture = req.user.profilpic
@@ -91,6 +96,7 @@ app.get("/dashboard",isLoggedIn , async(req,res) =>{
     
 })
 
+//profilsida där man kan ändra uppgifter, samt bild
 app.get('/change', isLoggedIn, (req,res) => {
     let currentUser = req.user.username
     let currentEmail = req.user.email
@@ -131,6 +137,7 @@ app.post('/change/:username', isLoggedIn, async(req,res) => {
 } catch (error) {}
 })
 
+//Skapa ny chattkanal
 app.post('/channel', (req,res) => {
     
     let room = new Room({
@@ -142,7 +149,8 @@ app.post('/channel', (req,res) => {
 })
 
 
-
+//Hantering av specifik chattkanal
+//Hämta data från databas 
 app.get('/channel/:id',isLoggedIn , async(req,res) => {
     let username = req.user.username
     let profilepicture = req.user.profilpic
@@ -172,6 +180,7 @@ app.get('/channel/:id',isLoggedIn , async(req,res) => {
        
 })
 
+//ta bort en chattkanal
 app.get("/channel/delete/:id",  (req, res) => {
     Room.findByIdAndDelete(req.params.id, function (err) {
         if(err) console.log(err);
@@ -180,15 +189,12 @@ app.get("/channel/delete/:id",  (req, res) => {
     })
   });
 
-
-app.get('/chat', (req,res) => {
-    res.render('chat')
-})
-
+//Rendera sida för registrering av användare
 app.get("/register",(req,res)=>{
     res.render("register");
 });
 
+//Registrera användare
 app.post('/register', (req,res) => {
     User.register(new User({
         username: req.body.username,
@@ -206,29 +212,24 @@ app.post('/register', (req,res) => {
         })
 })
 
+//Logga ut användare
 app.get("/logout",(req,res)=>{
     req.logout();
     res.redirect("/login");
 });
 
-//om man är inloggad , annars redirecta till /login
-function isLoggedIn(req,res,next) {
-    if(req.isAuthenticated()){
-        return next();
-    }
-    res.redirect("/login");
-}
 
-//kör när en användare connectar
+
+
 let users = [];
-
+//kör när en användare connectar
+//Sockethantering
 io.on('connection', (socket) => {
-    console.log('New WS connection')
+    console.log('connection')
     
     //skickar socket till frontend
     socket.on('joinRoom', ({ username, room }) => {
         const user = userJoin(socket.id, username, room);
-        console.log(user)
         socket.join(user.room);
         
         
@@ -240,9 +241,8 @@ io.on('connection', (socket) => {
     socket.on('chatMessage', ({msg, username}) => {
 
         
-        
+        //Spara chattmeddelande i mongoDB
         let chatMessage = new Chat({message: msg, nickname: username, room: room})
-        console.log(room)
         chatMessage.save()
 
         const user = getCurrentUser(socket.id);
@@ -255,16 +255,10 @@ io.on('connection', (socket) => {
 
     
 
-      //runs when client disconnects
+      //Körs när en avändare disconnectar
     socket.on('disconnect', () => {
         console.log('user disconected')
-       /* const user = userLeave(socket.id)
-
-        if(user) {
-            io.to(user.room).emit(
-                'message', 'Dagge has left the chat'
-            )
-        }*/
+       
     })
 
 
